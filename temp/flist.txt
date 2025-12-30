@@ -1,0 +1,3 @@
+file '/home/ian/Documentos/Programacion/Programas/quitarFondos/temp/sample_1.wav'
+file '/home/ian/Documentos/Programacion/Programas/quitarFondos/temp/sample_2.wav'
+file '/home/ian/Documentos/Programacion/Programas/quitarFondos/temp/sample_3.wav'
