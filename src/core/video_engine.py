@@ -160,13 +160,29 @@ class VideoEngine:
     def _mux_audio(self, src, dst, fmt):
         if self.stat: self.stat("Uniendo Audio...")
         temp = dst + "_temp.mkv"
+        
+        # Verify source exists before rename
+        if not os.path.exists(dst):
+            print(f"Error: Output file {dst} not found.")
+            return
+
         os.rename(dst, temp)
         
-        cmd = ["ffmpeg", "-y", "-i", temp, "-i", src, "-c:v", "copy", "-map", "0:v:0", "-map", "1:a:0", "-shortest"]
+        # Map 1:a:0? makes audio optional so it doesn't fail if src has no audio
+        cmd = ["ffmpeg", "-y", "-i", temp, "-i", src, "-c:v", "copy", "-map", "0:v:0", "-map", "1:a:0?", "-shortest"]
         
         if fmt == "webm": cmd.extend(["-c:a", "libvorbis", dst])
         elif fmt == "green": cmd.extend(["-c:a", "aac", dst])
-        else: cmd.extend(["-c:a", "pcm_s16le", dst])
+        else: cmd.extend(["-c:a", "pcm_s16le", dst]) # MOV/ProRes usually pcm
         
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if os.path.exists(temp): os.remove(temp)
+        # Run and capture output for debug
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        if res.returncode != 0:
+             print(f"Mux Warning: {res.stderr.decode()}")
+             # Restore temp if failed
+             if os.path.exists(temp):
+                 if os.path.exists(dst): os.remove(dst)
+                 os.rename(temp, dst)
+        else:
+            if os.path.exists(temp): os.remove(temp)

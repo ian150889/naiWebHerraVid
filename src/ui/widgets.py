@@ -179,8 +179,25 @@ class CanvasPlayer:
 
     def load(self, p): 
         self.stop(); self.path=p; self.points=[]; self.strokes=[]; self.masks=[]
-        c=cv2.VideoCapture(p); r,f=c.read(); c.release()
-        if r: self.canvas.update(); self.show(f)
+        self.cap = cv2.VideoCapture(p)
+        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+        ret, frame = self.cap.read()
+        if ret: 
+            self.canvas.update()
+            self.show(frame)
+
+    def seek(self, frame_idx):
+        if not self.path: return
+        # Ensure cap is open
+        if not self.cap or not self.cap.isOpened():
+             self.cap = cv2.VideoCapture(self.path)
+        
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+        ret, frame = self.cap.read()
+        if ret:
+            self.show(frame)
+
 
     def play(self):
         if not self.path or self.playing: return
@@ -198,12 +215,25 @@ class CanvasPlayer:
     def stop(self): self.playing=False; pygame.mixer.music.stop() if PYGAME_AVAILABLE else None
     
     def _loop(self):
-        c=cv2.VideoCapture(self.path); fps=c.get(5) or 30; d=1.0/fps
-        while self.playing and c.isOpened():
-            s=time.time(); r,f=c.read()
-            if not r: break
+        # Use existing cap if available, else open new
+        if not hasattr(self, 'cap') or not self.cap.isOpened():
+             self.cap = cv2.VideoCapture(self.path)
+             
+        d = 1.0/self.fps if hasattr(self, 'fps') and self.fps > 0 else 1.0/30
+        
+        while self.playing and self.cap.isOpened():
+            s=time.time()
+            r,f = self.cap.read()
+            if not r: 
+                # Loop or stop? Let's stop at end
+                self.stop()
+                break
+            
             try: self.app.after(0, lambda: self.show(f))
             except: break
-            wt=d-(time.time()-s); 
+            
+            wt=d-(time.time()-s)
             if wt>0: time.sleep(wt)
-        c.release(); self.playing=False
+        # Don't release cap here so we can seek after stop, but maybe we should?
+        # For now, let's keep it open for seeking logic.
+
