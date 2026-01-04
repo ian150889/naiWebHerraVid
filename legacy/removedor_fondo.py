@@ -868,7 +868,7 @@ class NaiWebSuite(ctk.CTk):
 
     def run_aud(self):
          # Similar Audio Logic
-         pass # Placeholder for brevity, user has logic already
+         pass # Placeholder for brevity, user has logic already prueba
 
     def run_mark(self):
         # Valida si hay algo para procesar: O trazos libres (Lápiz) o máscaras (Varita)
